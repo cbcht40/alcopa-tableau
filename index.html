@@ -64,6 +64,7 @@ h1 { font-size: 26px; letter-spacing: -.02em; margin: 0; font-weight: 650; }
   border-radius: 11px; font-size: 13px; line-height: 1.55; max-width: 95ch;
 }
 .mot b { font-weight: 620; }
+.mot.mot-ok { background: var(--vert-doux); color: var(--vert); }
 
 /* ---------- barre de filtres ---------- */
 .barre {
@@ -294,8 +295,9 @@ function fraisAcheteur(enchere, v, plafondEnLigne) {
             + (live ? ` + ${live} € d'enchère plafond` : ""),
   };
 }
-const PARTAGE = true;          // version transmissible : instantané figé
-const GENERE_LE = "2026-08-12T17:56:44";
+const PARTAGE = true;          // page destinée à quelqu'un d'autre
+const AUTO_MAJ = true;        // site hébergé, republié après chaque scan
+const GENERE_LE = "2026-08-12T17:59:50";
 
 const ENERGIES = { ES: "Essence", GO: "Diesel", EL: "Électrique", EH: "Hybride",
                    EE: "Hybride rechargeable", GH: "Hybride diesel", GP: "GPL", GL: "Bicarburation" };
@@ -684,15 +686,23 @@ function init() {
   if (heures > 30) { el.classList.add("perime"); el.textContent += " — pense à relancer un scan"; }
 
   if (PARTAGE) {
-    document.getElementById("actualiser").hidden = true;
+    document.getElementById("actualiser").hidden = !AUTO_MAJ;
     const mot = document.getElementById("mot");
     mot.hidden = false;
-    mot.innerHTML = `<b>Instantané, pas un site vivant.</b> Cette page fige les enchères
-      Alcopa en cours au moment du scan : les ventes indiquées passeront, les prix
-      bougeront, et elle ne se mettra pas à jour toute seule. Les prix marché sont des
-      <b>estimations</b> — chaque voiture porte un lien LeBonCoin pour les vérifier avant
-      d'enchérir. Le calculateur de chaque fiche montre ce qu'on paie réellement,
-      frais Alcopa compris.`;
+    mot.innerHTML = AUTO_MAJ
+      ? `<b>Mis à jour automatiquement.</b> Les enchères en cours sont rechargées
+         toutes les 30 minutes, et les nouvelles annonces deux fois par jour. En
+         revanche, les prix marché affichés sont des <b>estimations</b>, pas des
+         relevés : chaque voiture porte un lien LeBonCoin pour les vérifier avant
+         d'enchérir. Le calculateur de chaque fiche montre ce qu'on paie réellement,
+         frais Alcopa compris.`
+      : `<b>Instantané, pas un site vivant.</b> Cette page fige les enchères Alcopa
+         en cours au moment du scan : les ventes indiquées passeront, les prix
+         bougeront, et elle ne se mettra pas à jour toute seule. Les prix marché sont
+         des <b>estimations</b> — chaque voiture porte un lien LeBonCoin pour les
+         vérifier avant d'enchérir. Le calculateur de chaque fiche montre ce qu'on
+         paie réellement, frais Alcopa compris.`;
+    if (AUTO_MAJ) mot.classList.add("mot-ok");
   }
 
   const lieux = [...new Set(VEHICULES.map(v => v.lieu).filter(Boolean))].sort();
@@ -748,7 +758,7 @@ function init() {
   // Rechargement automatique : le fichier est réécrit par les scans (toutes les
   // 30 min pour les prix). On ne recharge qu'une page au repos — jamais pendant
   // qu'on lit une fiche, qu'on tape, ou qu'on vient d'agir.
-  if (!PARTAGE) {
+  if (!PARTAGE || AUTO_MAJ) {
     let derniereAction = Date.now();
     ["click", "keydown", "scroll", "input"].forEach(
       ev => addEventListener(ev, () => { derniereAction = Date.now(); }, { passive: true }));
